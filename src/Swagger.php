@@ -68,28 +68,36 @@ class Swagger
                                             }
 
                                             $cAPI = $api;
-                                            /**
-                                             * Remove tager Tag from endpoint to let APIs not to appear duplicate
+                                            $cAPI['sort_order'] = 99999;
+                                            $cAPI['route']      = $route;
+                                            $cAPI['method']     = $method;
+                                             /**
+                                             * Remove doc/sort tag from endpoint to let APIs not to appear duplicate
                                              */
-                                            if($isDoc && sizeof($cAPI['tags']) > 0)
+                                            if(sizeof($cAPI['tags']) > 0)
                                             {
-                                                $ctKey = NULL;
+                                                $isTagRemoved = false;
                                                 foreach($cAPI['tags'] as $ctk => $cTag)
                                                 {
-                                                    if($cTag == $tag)
+                                                    $isSort = (strpos($cTag, $this->sortPrefix) !== false);
+                                                    if($isSort)
                                                     {
-                                                        $ctKey = $ctk;
-                                                        break;
+                                                        $cAPI['sort_order'] = (int)str_replace($this->sortPrefix, '', $cTag);
+                                                    }
+
+                                                    if(($isDoc && $cTag == $tag) || $isSort)
+                                                    {
+                                                        $isTagRemoved = true;
+                                                        unset($cAPI['tags'][$ctk]);
                                                     }   
                                                 }
-                                                if($ctKey !== NULL)
+                                                if($isTagRemoved)
                                                 {
-                                                    unset($cAPI['tags'][$ctKey]);
                                                     $cAPI['tags'] = array_values($cAPI['tags']);
                                                 }
                                             }
 
-                                            $collections[$fTag]['paths'][$route][$method] = $cAPI;
+                                            $collections[$fTag]['apis'][] = $cAPI;
                                         }
                                     }
                                 }
@@ -107,6 +115,24 @@ class Swagger
                     $doneFullSwagger = false;
                     foreach($collections as $file => $jsonData)
                     {
+                        /**
+                         * Sorting the APIs based on sort order
+                         */
+                        $apis = $jsonData['apis'];
+                        usort($apis, function ($item1, $item2) {
+                            return $item1['sort_order'] <=> $item2['sort_order'];
+                        });
+                        foreach($apis as $ak => $api)
+                        {
+                            $route  = $api['route'];
+                            $method = $api['method'];
+                            unset($api['sort_order']);
+                            unset($api['route']);
+                            unset($api['method']);
+                            $jsonData['paths'][$route][$method] = $api;
+                        }
+                        unset($jsonData['apis']);
+                        
                         $path = $saveTo.DIRECTORY_SEPARATOR.$file.'.json';
                         file_put_contents($path, json_encode($jsonData));
                         sleep(rand(0.5,1));

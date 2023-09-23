@@ -140,15 +140,16 @@ class Postman
 			}
 
 			$params = [];
+			$notReq = [];
 			if(sizeof($properties) > 0)
 			{
 				foreach($properties as $field => $property)
 				{
 					$value = $this->getExampleValue($property, $field);
 					
+					$isRequired = in_array($field, $required);	
 					if($mode == 'formdata')
 					{
-						$isRequired = in_array($field, $required);
 						$description = isset($property['description'])? $property['description']: '';
 						if($isRequired)
 						{
@@ -164,7 +165,14 @@ class Postman
 					}
 					else
 					{
-						$params[$field] = $value;
+						if($isRequired)
+						{
+							$params[$field] = $value;
+						}
+						else
+						{
+							$notReq[$field] = $field;
+						}
 					}
 				}	
 			}
@@ -175,7 +183,12 @@ class Postman
 				];
 			if($mode == 'raw')
 			{
-				$item['request']['body']['raw'] = json_encode($params, JSON_PRETTY_PRINT);
+				$prettyJson = json_encode(array_merge($params, $notReq), JSON_PRETTY_PRINT);
+				foreach($notReq as $field => $value)
+				{
+					$prettyJson = str_replace("\"{$field}\":", "//\"{$field}\":", $prettyJson);
+				}
+				$item['request']['body']['raw'] = $prettyJson;
 				$item['request']['body']['options'] = [
 					'raw' => ['language' => 'json']
 				];
