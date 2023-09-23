@@ -11,6 +11,8 @@ class Swagger
 {
 	private $docPrefix = 'doc-';
 
+    private $sortPrefix = 'sort-';
+
     public static function generateAnnotation()
     {
         $annotation = new Annotation();
