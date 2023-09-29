@@ -117,6 +117,7 @@ class Postman
 		}
 		if(sizeof($queryParams)> 0)
 		{
+			$this->sortParams($queryParams);
 			$item['request']['url']['query'] = $queryParams;
 		}
 
@@ -195,11 +196,22 @@ class Postman
 			}
 			else 
 			{
+				$this->sortParams($params);
 				$item['request']['body']['formdata'] = $params;
 			}
 		}
 
 		$this->postmanData['item'][] = $item;
+	}
+
+	private function sortParams(&$params)
+	{
+		usort($params, function ($a, $b) {
+            if($a['disabled'] === $b['disabled']) {
+		        return 0;
+		    }
+		    return $a['disabled'] < $b['disabled'] ? -1 : 1;
+        });
 	}
 
 	private function getExampleValue($property, $name=NULL)
