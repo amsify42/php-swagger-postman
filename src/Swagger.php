@@ -87,7 +87,7 @@ class Swagger
                                                         $cAPI['sort_order'] = (int)str_replace($this->sortPrefix, '', $cTag);
                                                     }
 
-                                                    if(($isDoc && $cTag == $tag) || $isSort)
+                                                    if(($isDoc && $cTag == $tag) || $isSort || strpos($cTag, $this->docPrefix) !== false)
                                                     {
                                                         $isTagRemoved = true;
                                                         unset($cAPI['tags'][$ctk]);
