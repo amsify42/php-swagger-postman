@@ -8,41 +8,173 @@ class Annotation
 
 	private $isLoaded = false;
 
+	private $security = [];
+
+	private $headers = [];
+
+	private $responses = [
+		[
+			'code' => 200,
+			'description' => 'success'
+		]
+	];
+
 	private $bodyData = [];
 
-	public function generate($rules=[], $routeParams=[])
+	private $rulesCallback = NULL;
+
+	public function setSecurity(array|string $security)
+	{
+		$this->security = is_array($security)? array_merge($this->security, $security): array_merge($this->security, [$security]);
+		return $this;
+	}
+
+	public function setHeader(array|string $header)
+	{
+		$this->headers = is_array($header)? array_merge($this->headers, $header): array_merge($this->headers, [$header]);
+		return $this;
+	}
+
+	public function checkRules($rulesCallback=NULL)
+	{
+		$this->rulesCallback = $rulesCallback;
+	}
+
+	public function setResponse($response)
+	{
+		$this->responses = is_array($response)? array_merge($this->responses, $response): array_merge($this->responses, [$response]);
+		return $this;
+	}
+
+	public function setSuccessData($data=NULL)
+	{
+		$successDataContent = "";
+		if($data)
+		{
+			$successDataContent .= " *\t\t@OA\JsonContent(\n *\t\t\t";
+			$successDataContent .= $this->createObjectOrArrayProperty($data);
+			$successDataContent .= "\n *\t\t)";
+		}
+		if($successDataContent) {
+			$this->responses[0]['content'] = $successDataContent;	
+		}
+	}
+
+	public function createObjectOrArrayProperty($data, $name='data', $indent="\t\t\t\t")
+	{	
+		$property = "@OA\Property(\n *{$indent}property=\"{$name}\",";
+
+		$isArray = isset($data[0])? true: false;
+		$isArrOfObject = false;
+
+		if($isArray)
+		{
+			$property .= "\n *{$indent}type=\"array\",\n *{$indent}__EXAMPLE__\n *{$indent}@OA\Items(";
+		}
+		else
+		{
+			$property .= "\n *{$indent}type=\"object\",\n *{$indent}__EXAMPLE__";
+		}
+		foreach($data as $name => $value)
+		{
+			if($isArray)
+			{
+				if(is_array($value))
+				{
+					$isArrOfObject = true;
+					foreach($value as $propertyName => $propertyValue)
+					{
+						$propType = "";
+						if(Data::isInt($propertyValue))
+						{
+							$propType = "\n *{$indent}\t\ttype=\"integer\",\n *{$indent}\t\tformat=\"int64\",";
+						}
+						else
+						{
+							$propType = "\n *{$indent}\t\ttype=\"string\",";
+						}
+						$property .= "\n *{$indent}\t@OA\Property(\n *{$indent}\t\tproperty=\"{$propertyName}\",{$propType}\n *{$indent}\t\texample=\"{$propertyValue}\"\n *{$indent}\t),";
+					}
+					$property = rtrim($property, ',');
+				}
+				else
+				{
+					if(Data::isInt($value))
+					{
+						$property = str_replace('__EXAMPLE__', "example={\"".implode('","', $data)."\"},", $property);
+						$property .= "\n *{$indent}\ttype=\"integer\",\n *{$indent}\tformat=\"int64\"";
+					}
+					else
+					{
+						$property = str_replace('__EXAMPLE__', "example={\"".implode('","', $data)."\"},", $property);
+						$property .= "\n *{$indent}\ttype=\"string\"";
+					}
+				}
+				break;
+			}
+			else
+			{
+				$propType = "";
+				if(Data::isInt($value))
+				{
+					$propType = "\n *{$indent}\ttype=\"integer\",\n *{$indent}\tformat=\"int64\",";
+				}
+				else
+				{
+					$propType = "\n *{$indent}\ttype=\"string\",";
+				}
+				$property .= "\n *{$indent}@OA\Property(\n *{$indent}\tproperty=\"{$name}\",{$propType}\n *{$indent}\texample=\"{$value}\"\n *{$indent}),";
+			}
+		}
+		$property = str_replace("\n *{$indent}__EXAMPLE__", '', $property);
+		$property = rtrim($property, ',');
+		//return $property.($isArray && $isArrOfObject === false? "\n *{$indent})": "\n *".substr($indent, 0, strlen($indent)-1).")");
+		return $property.($isArray? "\n *{$indent})": "")."\n *".substr($indent, 0, strlen($indent)-1).")";
+	}
+
+	public function generate($rules=[], $routeParams=[], $rulesCallback=NULL)
 	{
 		$method  = isset($_SERVER['REQUEST_METHOD'])? $_SERVER['REQUEST_METHOD']: 'GET';
 		$lMethod = strtolower($method);
 
 		$this->method = $lMethod;
 
-		$routeURI= isset($_SERVER['REQUEST_URI'])? $_SERVER['REQUEST_URI']: '/';
+		$routeURI= isset($_SERVER['REQUEST_URI'])? strtok($_SERVER["REQUEST_URI"], '?'): '/';
 		$qParams = ($lMethod == 'get')? $rules: [];
 
 		$paramsStr = '';
 		$bodyStr   = '';
 		$hasRParams= false;
+
+		if(!empty($this->headers))
+		{
+			foreach($this->headers as $headerKey => $headerValue)
+			{
+				$paramsStr .= $this->createParameter($headerKey, $headerValue, 'header', (Data::isInt($headerValue)? true: false), false, true);
+			}
+		}
+
 		if(sizeof($routeParams)> 0)
 		{
 			$hasRParams = true;
 			foreach($routeParams as $pName => $pValue)
 			{
-				$routeURI = str_replace($pValue, '{'.$pName.'}', $routeURI);
-				$paramsStr .= $this->createParameter($pName, $pValue, true, false, false, true);
+				$routeURI = str_replace('/'.$pValue, '/{'.$pName.'}', $routeURI);
+				$paramsStr .= $this->createParameter($pName, $pValue, 'path', (Data::isInt($pValue)? true: false), false, true);
 			}
 		}
 		if(sizeof($qParams) > 0)
 		{
 			foreach($qParams as $param => $rule)
 			{
-				$ruleArr = is_string($rule)? explode(',', $rule): $rule;
+				$ruleArr = is_string($rule)? explode('|', $rule): $rule;
 				$isReq   = false;
 				$isInt   = false;
 				$isTinyInt = false;
 				$enumValues = NULL;
 				foreach($ruleArr as $rk => $ru)
 				{
+					$this->checkCallback($param, $ru, $isTinyInt, $enumValues);
 					if($ru == 'required')
 					{
 						$isReq = true;
@@ -53,13 +185,13 @@ class Annotation
 					}
 				}
 				$defVal = $this->has($param)? $this->get($param): '';
-				$paramsStr .= $this->createParameter($param, $this->randomValue($param, $isInt, $isTinyInt, $defVal, $enumValues), false, $isInt, $isTinyInt, $isReq, $enumValues);
+				$paramsStr .= $this->createParameter($param, $this->randomValue($param, $isInt, $isTinyInt, $defVal, $enumValues), 'query', $isInt, $isTinyInt, $isReq, $enumValues);
 			}
 		}
 
 		if($lMethod != 'get' && sizeof($rules)> 0)
 		{
-			$mediaType = ($lMethod == 'post')? 'multipart/form-data': 'application/json';
+			$mediaType = ($lMethod == 'post' && !empty($_POST))? 'multipart/form-data': 'application/json';
 
 			$bodyStr .= "\n *\t@OA\RequestBody(\n *\t\t@OA\MediaType(\n *\t\t\tmediaType=\"".$mediaType."\",\n *\t\t\t@OA\Schema(";
 
@@ -71,8 +203,14 @@ class Annotation
 				$isTinyInt    = false;
 				$enumValues   = NULL;
 				$ruleArr      = is_string($rule)? explode('|', $rule): $rule;
+				$propertyStr  = NULL;
 				foreach($ruleArr as $rk => $ru)
 				{
+					$propertyStr = $this->checkCallback($param, $ru, $isTinyInt, $enumValues);
+					if($propertyStr !== NULL)
+					{
+						break;
+					}
 					if($ru == 'required')
 					{
 						$reqArr[] = '"'.$param.'"';
@@ -86,6 +224,11 @@ class Annotation
 						$isFile = true;
 					}
 				}
+				if($propertyStr !== NULL)
+				{
+					$properties .= ($propertyStr? "\n \t\t\t\t".$propertyStr.",": "");
+					continue;	
+				}
 				$defVal   = $this->has($param)? $this->input($param): '';
 				$bodyStr .= $this->createProperty($param, $this->randomValue($param, $isInt, $isTinyInt, $defVal, $enumValues), $isInt, $isTinyInt, $isFile, $enumValues);
 			}
@@ -98,7 +241,6 @@ class Annotation
 		$title          = trim(ucwords($operationId));
 		$title          = trim(str_replace('  ', ' ', $title));
 		$operationId    = trim(str_replace(' ', '', $title));
-		$operationId 	= isset($operationId[0])? strtolower($operationId[0]): '';
 
 		$fName = $this->firstName($title);
 
@@ -129,29 +271,79 @@ class Annotation
 			}
 		}
 
-		$annotation = "/**\n * @OA\\".ucfirst($lMethod)."(\n *\tpath=\"{$routeURI}\",\n *\ttags={\"{$fName}\"},\n *\tsummary=\"{$title}\",\n *\tdescription=\"{$title}\",\n *\toperationId=\"{$operationId}\",\t{$paramsStr}{$bodyStr}\n *\t@OA\Response(\n *\t\tresponse=\"200\",\n *\t\tdescription=\"source code indicates successful operation\"\n *\t),\n *\t@OA\Response(\n *\t\tresponse=\"400\",\n *\t\tdescription=\"source code indicates Validation errors\"\n *\t)";
+		$secuirtyStr = "";
+		if(!empty($this->security))
+		{
+			$secuirtyStr .= "\n *\tsecurity={{";
+			foreach($this->security as $security)
+			{
+				$secuirtyStr .= "\"{$security}\": {},";
+			}
+			$secuirtyStr = rtrim($secuirtyStr, ',');
+			$secuirtyStr .= "}},";
+		}
+
+		$annotation = "/**\n * @OA\\".ucfirst($lMethod)."(\n *\tpath=\"{$routeURI}\",\n *\ttags={\"{$fName}\"},\n *\tsummary=\"{$title}\",\n *\tdescription=\"{$title}\",\n *\toperationId=\"{$operationId}\",{$secuirtyStr}\t{$paramsStr}{$bodyStr}".$this->createResponses();
 
 		$annotation .= "\n * )\n **/";
 
 		return $annotation;
 	}
 
-	public function createParameter($name, $value, $inPath=true, $isInt=false, $isTinyInt=false, $required=false, $enumValues=NULL)
+	private function checkCallback($name, $rule, &$isTinyInt, &$enumValues)
 	{
-		$inStr = ($inPath)? 'path': 'query';
-		$reqStr= ($inPath || $required)? 'true': 'false';
+		if($this->rulesCallback && is_callable($this->rulesCallback))
+		{
+			$result = $this->rulesCallback->__invoke($name, $rule);
+			if($result)
+			{
+				if(isset($result['enum']))
+				{
+					$enumValues = $result['enum'];
+				}
+				else if(isset($result['tinyint']))
+				{
+					$isTinyInt = true;
+				}
+				else if(isset($result['property']))
+				{
+					return $result['property'];
+				}
+			}
+		}
+		return NULL;
+	}
+
+	public function createParameter($name, $value, $in, $isInt=false, $isTinyInt=false, $required=false, $enumValues=NULL)
+	{
+		$reqStr= ($in == 'path' || $required)? 'true': 'false';
 		$enum  = ($isTinyInt)? "\n *\t\t\tenum={\"0\",\"1\"},": "";
-		$enum  = ($enumValues !== NULL)? "\n *\t\t\tenum={\"".implode('","', $enumValues)."\"},": "";
+		$enum  = ($enumValues !== NULL)? "\n *\t\t\tenum={\"".implode('","', $enumValues)."\"},": $enum;
 
-		$schema = ($isTinyInt === false && $isInt)?
-		"\n *\t\t@OA\Schema(\n *\t\t\ttype=\"integer\",\n *\t\t\tformat=\"int64\",\n *\t\t\texample=\"".$value."\"\n *\t\t)"
-		:      "\n *\t\t@OA\Schema(\n *\t\t\ttype=\"string\",".$enum."\n *\t\t\texample=\"".$value."\"\n *\t\t)";
+		$schema = "\n *\t\t@OA\Schema(";
+		if(is_array($value))
+		{
+			$isInt = isset($value[0]) && Data::isInt($value[0])? true: false;		
+			$type = ($isInt)? "\n *\t\t\t\ttype=\"integer\",\n *\t\t\t\tformat=\"int32\"": "\n *\t\t\t\ttype=\"string\"";
+			$schema .= "\n *\t\t\ttype=\"array\",\n *\t\t\texample={\"".implode('","', $value)."\"},\n *\t\t\t@OA\Items({$type}\n *\t\t\t)\n *\t\t)";
+		}
+		else
+		{
+			$schema = ($isTinyInt === false && $isInt)?
+			"{$schema}\n *\t\t\ttype=\"integer\",\n *\t\t\tformat=\"int64\",\n *\t\t\texample=\"".$value."\"\n *\t\t)"
+			:      "{$schema}\n *\t\t\ttype=\"string\",".$enum."\n *\t\t\texample=\"".$value."\"\n *\t\t)";
+		}
 
-		return "\n *\t@OA\Parameter(\n *\t\tname=\"".$name."\",\n *\t\tin=\"".$inStr."\",\n *\t\tdescription=\"".$name."\",\n *\t\trequired=".$reqStr.",".$schema."\n *\t),";
+		return "\n *\t@OA\Parameter(\n *\t\tname=\"".$name."\",\n *\t\tin=\"".$in."\",\n *\t\tdescription=\"".$name."\",\n *\t\trequired=".$reqStr.",".$schema."\n *\t),";
 	}
 
 	public function createProperty($name, $value, $isInt=false, $isTinyInt=false, $isFile=false, $enumValues=NULL)
 	{
+		if($value && (is_array($value) || is_object($value)))
+		{
+			return "\n * \t\t\t\t".$this->createObjectOrArrayProperty($value, $name, "\t\t\t\t\t").",";
+		}
+
 		$type     = "string";
 		$format   = '';
 		if($isInt)
@@ -195,7 +387,7 @@ class Annotation
 
 		if($isInt)
 		{
-			return '110011';
+			return '10';
 		}
 
 		if(stripos($param, 'email') !== false)
@@ -278,11 +470,16 @@ class Annotation
 		}
 	}
 
+	private function get($key)
+	{
+		return isset($_GET[$key])? $_GET[$key]: NULL;
+	}
+
 	private function input($key)
 	{
 		if($this->method == 'get')
 		{
-			return isset($_GET[$key])? $_GET[$key]: NULL; 
+			return $this->get($key); 
 		}
 		else
 		{
@@ -305,5 +502,32 @@ class Annotation
 			$this->isLoaded = true;
 			$this->bodyData = json_decode(file_get_contents("php://input"), true);
 		}
+	}
+
+	private function createResponses()
+	{
+		$responsesStr = "";
+		foreach($this->responses as $response)
+		{
+			$responsesStr .= "\n *\t@OA\Response(\n *\t\tresponse=\"{$response['code']}\"";
+
+			if(isset($response['ref']) && $response['ref'])
+			{
+				$responsesStr .= ",\n *\t\tref=\"{$response['ref']}\"";
+			}
+
+			if(isset($response['description']) && $response['description'])
+			{
+				$responsesStr .= ",\n *\t\tdescription=\"{$response['description']}\"";
+			}
+
+			if(isset($response['content']) && $response['content'])
+			{
+				$responsesStr .= ",\n{$response['content']}";
+			}
+			$responsesStr .= "\n *\t),";
+		}
+		$responsesStr = rtrim($responsesStr, ',');
+		return $responsesStr;
 	}
 }
