@@ -9,7 +9,7 @@ use Exception;
 
 class Swagger
 {
-	private $docPrefix = 'doc-';
+    private $docPrefix = 'doc-';
 
     private $sortPrefix = 'sort-';
 
@@ -29,7 +29,6 @@ class Swagger
         }
 
         $scanPath = is_array($scanPath)? $scanPath: [$scanPath];
-        //var_dump($scanPath); die;
         $openapi  = Generator::scan($scanPath);
         $json     = $openapi->toJson();
         if($json)
@@ -46,7 +45,7 @@ class Swagger
                         {
                             foreach($methods as $method => $api)
                             {
-                                if(sizeof($api['tags'])> 0)
+                                if(isset($api['tags']) && sizeof($api['tags'])> 0)
                                 {
                                     foreach($api['tags'] as $tk => $tag)
                                     {
