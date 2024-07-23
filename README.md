@@ -1,5 +1,9 @@
 # PHP Swagger Postman
 
+```
+composer require amsify42/php-swagger-postman
+```
+
 ### Scanning the directory and generating swagger json for API documentation.
 ```php
 $swagger = new \Amsify42\PhpSwaggerPostman\Swagger;
