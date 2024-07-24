@@ -3,40 +3,31 @@
 ```
 composer require amsify42/php-swagger-postman
 ```
-
-### Scanning the directory and generating swagger json for API documentation.
+### For generating enpoint specific Attribute, you can call this method
 ```php
-$swagger = new \Amsify42\PhpSwaggerPostman\Swagger;
-$swagger->getGeneratedJson(
-    "path/to/directory",
-    "path/to/export-swagger-json"
-);
-```
-### For generating enpoint specific Annotation, you can call this method
-```php
-$annotation = new \Amsify42\PhpSwaggerPostman\Swagger\Annotation();
-echo $annotation->generate();
+$attribute = new \Amsify42\PhpSwaggerPostman\Swagger\Attribute();
+echo $attribute->generate();
 ```
 
-#### You can also pass parameter rules and route params also with key value pair to get it added to the annotation
+#### You can also pass parameter rules and route params also with key value pair to get it added to the attribute
 ```php
-echo $annotation->generate(
+echo $attribute->generate(
   ['name' => 'required', 'address_id' => 'reqiured|integer'],
   ['userId' => 42]
 );
 ```
-#### For generating response data in annotation
+#### For generating response data in attibute
 ```php
-$annotation->setSuccessData(['id' => 42, 'name' => 'SomeUser']);
-echo $annotation->generate();
+$attribute->setSuccessData(['id' => 42, 'name' => 'SomeUser']);
+echo $attribute->generate();
 ```
-#### You can also pass callback for checking rules and decide the param needs to have TinyInt or Enum Values or Custom Property Annotation
+#### You can also pass callback for checking rules and decide the param needs to have TinyInt or Enum Values or Custom Property Attribute
 ```php
-$annotation->checkRules(
+$attribute->checkRules(
                 function ($name, $rule) {
                     if ($rule == 'some_custom_rule') {
                         return [
-                            'property' => // Pass some custom property annotation syntax
+                            'property' => // Pass some custom property attribute syntax
                         ];
                     } else if ($rule == 'enum') {
                         return  [
@@ -53,29 +44,102 @@ $annotation->checkRules(
 ```
 Note: By default `NULL` needs to be passed
 
-#### For adding security/header/response
+#### For adding security
 ```php
-$annotation
-            ->setSecurity('XApiKey') // The XApiKey will be from the security annotation you already added
-            ->setHeader(['Auth-Key' => 'some_key'])
-            ->setResponse([
+$attribute->setSecurity('XApiKey'); // The XApiKey will be from the security attribute already added
+```
+Example security attribute already added
+```php
+#[OA\SecurityScheme(
+    securityScheme: "XApiKey",
+    type: "apiKey",
+    in: "header",
+    name: "X-Api-Key"
+)]
+```
+
+#### For adding header with static value
+```php
+$attribute->setHeader(['Auth-Key' => 'some_key']);
+```
+
+#### For adding response which already defined
+```php
+$attribute->setResponse([
                 [
                     'code' => 422,
-                    'ref' => '#/components/responses/Validation' // Validation here is the name of response annotation which is already defined somewhere in annotation
+                    'ref' => '#/components/responses/Validation' // Validation here is the name of response which is already defined somewhere
                 ]
             ]);
 ```
-
-#### For generating _Attribute_ instead of _Annotation_
+Example Validation already defined
 ```php
-$attribute = new Attribute();
-echo $attribute->generate();
+#[OA\Response(
+    response: "Validation",
+    description: "Validation Errors",
+    content: new OA\JsonContent(
+        properties: [
+            new OA\Property(
+                property: "message",
+                example: "Please check the inputs provided"
+            ),
+            new OA\Property(
+                property: "errors",
+                type: "object"
+            )
+        ]
+    )
+)]
 ```
-_Note:_ You can use all the method with **Attribute** which is mentioned above for **Annotation** but _Attribute_ requires minimum php `8.2` version.
 
+#### For generating _Annotation_ instead of _Attribute_
+```php
+$annotation = new \Amsify42\PhpSwaggerPostman\Swagger\Annotation();
+echo $annotation->generate();
+```
+_Notes:_
+1. You can use all the method with **Annotation** which is mentioned above for **Attribute** but _Attribute_ requires minimum php `8.2` version.
+2. For using Annotation with latest `swagger-php` installed, you may have to separately install `doctrine/annotations`
+```
+composer require doctrine/annotations
+```
+
+### Scanning the directory and generating swagger json for API documentation.
+```php
+$swagger = new \Amsify42\PhpSwaggerPostman\Swagger;
+$swagger->getGeneratedJson(
+    "path/to/directory",
+    "path/to/export-swagger-json"
+);
+```
+**Note:** Make sure to have `OA/Info` and at least one API endpoint already added before running `$swagger->getGeneratedJson()` method.
+```php
+#[OA\Info(title: "My API", version: "1.0.0")]
+
+#[OA\Get(path:"/api/users))
+#[OA\Response(response:"200", description:"An example endpoint")]
+```
+**Annotation Example**
+```php
+/**
+ * @OA\Info(
+ *   version="1.0.0",
+ *   title="My API"
+ * )
+ */
+
+/**
+ * @OA\Get(
+ *     path="/api/users",
+ *     @OA\Response(response="200", description="An example endpoint")
+ * )
+ */
+
+```
 
 ### Testing
 ```
 ./vendor/bin/phpunit tests
+./vendor/bin/phpunit --filter AttributeTest
 ./vendor/bin/phpunit --filter AnnotationTest
 ```
