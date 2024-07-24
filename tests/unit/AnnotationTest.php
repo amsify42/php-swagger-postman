@@ -8,8 +8,6 @@ final class AnnotationTest extends TestCase
 {
 	public function testSamples()
 	{
-		$annotation = Swagger::generateAnnotation();
 		$this->assertTrue(true);
-		//ddd($annotation);
 	}
 }
