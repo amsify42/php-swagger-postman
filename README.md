@@ -106,12 +106,12 @@ composer require doctrine/annotations
 Refer to this link for more details
 https://github.com/zircote/swagger-php/blob/master/docs/guide/migrating-to-v4.md
 
-### Scanning the directory and generating swagger json for API documentation.
+### Scanning the directory and generating swagger json for API documentation and postman collection json.
 ```php
 $swagger = new \Amsify42\PhpSwaggerPostman\Swagger;
 $swagger->getGeneratedJson(
-    "path/to/directory",
-    "path/to/export-swagger-json"
+    "path/to/scan-directory",
+    "path/to/export-swagger-and-postman-json/"
 );
 ```
 **Note:** Make sure to have `OA/Info` and at least one API endpoint already added before running `$swagger->getGeneratedJson()` method.
@@ -137,11 +137,4 @@ $swagger->getGeneratedJson(
  * )
  */
 
-```
-
-### Testing
-```
-./vendor/bin/phpunit tests
-./vendor/bin/phpunit --filter AttributeTest
-./vendor/bin/phpunit --filter AnnotationTest
 ```
