@@ -8,11 +8,19 @@ use Exception;
 
 class Swagger
 {
-    private $docPrefix = 'doc-';
+	private $docPrefix = 'doc-';
 
     private $sortPrefix = 'sort-';
 
-    public function getGeneratedJson($scanPath, $saveTo, $fparams=[])
+    private $baseURL = NULL;
+
+    public function setBaseURL($baseURL)
+    {
+        $this->baseURL = $baseURL;
+        return $this;
+    }
+
+	public function getGeneratedJson($scanPath, $saveTo, $fparams=[])
     {
         $filterTags = NULL;
         if(isset($fparams['filterTags']) && $fparams['filterTags'])
@@ -135,8 +143,15 @@ class Swagger
                     	$postmanData 	= $postman->generate($jsonData);
                     	if($postmanData)
                     	{
-                    		$postmanData['info']['name'] = ucwords($file);
                     		file_put_contents($saveTo.DIRECTORY_SEPARATOR.$file.'.postman_collection.json', json_encode($postmanData));
+
+                            $environmentData = $postman->generateEnv(
+                                ($this->baseURL? $this->baseURL: (isset($jsonData['servers'][0]['url'])? $jsonData['servers'][0]['url']: NULL))
+                            );
+                            if(!empty($environmentData))
+                            {
+                                file_put_contents($saveTo.DIRECTORY_SEPARATOR.$file.'.postman_environment.json', json_encode($environmentData));
+                            }
                     	}
                         if($file == 'swagger')
                         {
