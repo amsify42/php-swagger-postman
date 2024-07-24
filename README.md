@@ -103,6 +103,8 @@ _Notes:_
 ```
 composer require doctrine/annotations
 ```
+Refer to this link for more details
+https://github.com/zircote/swagger-php/blob/master/docs/guide/migrating-to-v4.md
 
 ### Scanning the directory and generating swagger json for API documentation.
 ```php
