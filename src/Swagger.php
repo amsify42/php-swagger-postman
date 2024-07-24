@@ -8,7 +8,7 @@ use Exception;
 
 class Swagger
 {
-	private $docPrefix = 'doc-';
+    private $docPrefix = 'doc-';
 
     private $sortPrefix = 'sort-';
 
