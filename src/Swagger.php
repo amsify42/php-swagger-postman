@@ -3,7 +3,6 @@
 namespace Amsify42\PhpSwaggerPostman;
 
 use OpenApi\Generator;
-use Amsify42\PhpSwaggerPostman\Swagger\Annotation;
 use Amsify42\PhpSwaggerPostman\Postman;
 use Exception;
 
@@ -13,13 +12,7 @@ class Swagger
 
     private $sortPrefix = 'sort-';
 
-    public static function generateAnnotation()
-    {
-        $annotation = new Annotation();
-        return $annotation->generate();
-    }
-
-	public function getGeneratedJson($scanPath, $saveTo, $fparams=[])
+    public function getGeneratedJson($scanPath, $saveTo, $fparams=[])
     {
         $filterTags = NULL;
         if(isset($fparams['filterTags']) && $fparams['filterTags'])
