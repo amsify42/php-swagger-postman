@@ -6,6 +6,8 @@ class Postman
 {
 	private $exampleValues = [];
 
+	private $securitySchemes = [];
+
 	private $postmanData = [
 		'info' => [
 			//'_postman_id' => '',
@@ -16,18 +18,15 @@ class Postman
 			// API Request Items
 		],
 		'event' => [
-			[
-				'listen' => 'prerequest',
-				'script' => [
-					'type' => 'text/javascript',
-					'exec' => [
-						'pm.request.headers.add({',
-						'  key: "Authoization",',
-						'  value: "Bearer " + pm.environment.get("accessToken")',
-						'});'
-					]
-				]
-			]
+			// [
+			// 	'listen' => 'prerequest',
+			// 	'script' => [
+			// 		'type' => 'text/javascript',
+			// 		'exec' => [
+			// 			''
+			// 		]
+			// 	]
+			// ]
 		]
 	];
 
@@ -42,6 +41,7 @@ class Postman
 		if($swaggerData && sizeof($swaggerData)> 0)
 		{
 			$paths = (isset($swaggerData['paths']) && sizeof($swaggerData['paths'])> 0)? $swaggerData['paths']: [];
+			$this->securitySchemes = (isset($swaggerData['components']['securitySchemes']) && sizeof($swaggerData['components']['securitySchemes'])> 0)? $swaggerData['components']['securitySchemes']: [];
 			foreach($paths as $route => $endpoints)
 			{
 				if($endpoints && sizeof($endpoints) > 0)
@@ -60,6 +60,7 @@ class Postman
 	private function addItem($route, $method, $endpoint)
 	{
 		$uri 		 = $route;
+		$headers 	 = [];
 		$routeParams = [];
 		$queryParams = [];
 		/**
@@ -67,6 +68,7 @@ class Postman
 		 */
 		$addIsTest 		= ($method == 'get')? true: false;
 		$urlParameters 	= (isset($endpoint['parameters']) && sizeof($endpoint['parameters'])> 0)? $endpoint['parameters']: [];
+		$securities 	= (isset($endpoint['security']) && sizeof($endpoint['security'])> 0)? $endpoint['security']: [];
 		if(sizeof($urlParameters)> 0)
 		{
 			foreach($urlParameters as $upk => $urlParameter)
@@ -95,14 +97,46 @@ class Postman
 						'disabled' 		=> !$urlParameter['required']
 					];
 				}
+				else if($urlParameter['in'] == 'header')
+				{
+					$description = isset($urlParameter['description'])? $urlParameter['description']: '';
+					if($urlParameter['required'])
+					{
+						$description = '(Required) '.$description;
+					}
+					$headers[] 	= [
+						'key' 			=> $urlParameter['name'],
+						'value' 		=> $this->getExampleValue($urlParameter, $urlParameter['name']),
+						'description' 	=> trim($description),
+						'disabled' 		=> !$urlParameter['required']
+					];
+				}
+			}
+		}
+
+		if(sizeof($securities) > 0)
+		{
+			foreach($securities as $security)
+			{
+				$securityName = key($security);
+				$securityHeader = $this->checkHeaderSecurity($securityName);
+				if($securityHeader)
+				{
+					$headers[] 	= [
+						'key' 			=> $securityName,
+						'value' 		=> "{{".$securityName."}}",
+						'description' 	=> $securityHeader['description'],
+						'disabled' 		=> false
+					];
+				}
 			}
 		}
 
 		$item = [
-			'name' => (isset($endpoint['summary']) && $endpoint['summary'])? $endpoint['summary']: $endpoint['description'],
+			'name' => (isset($endpoint['summary']) && $endpoint['summary'])? $endpoint['summary']: (isset($endpoint['description'])? $endpoint['description']: ''),
 			'request' => [
 				'method' => $method,
-				'header' => [],
+				'header' => $headers,
 				'url' 	 => [
 					'raw'  => '{{baseURL}}'.$uri,
 					'host' => ['{{baseURL}}'],
@@ -204,6 +238,18 @@ class Postman
 		$this->postmanData['item'][] = $item;
 	}
 
+	private function checkHeaderSecurity($name)
+	{
+		if(isset($this->securitySchemes[$name]) && $this->securitySchemes[$name]['in'] == 'header')
+		{
+			return [
+				'name' => $this->securitySchemes[$name]['name'],
+				'description' => isset($this->securitySchemes[$name]['description'])? $this->securitySchemes[$name]['description']: ''
+			];
+		}
+		return NULL;
+	}
+
 	private function sortParams(&$params)
 	{
 		usort($params, function ($a, $b) {
@@ -230,8 +276,15 @@ class Postman
 		$example  	= (isset($property['schema']['example']) && $property['schema']['example'])? $property['schema']['example']: (isset($property['example'])? $property['example']: ''); 
 		if($example)
 		{
-			$exampleArr = explode(':', $example);
-			$value = (isset($exampleArr[1]) && $exampleArr[1])? trim($exampleArr[1]): trim($example);
+			if(is_array($example))
+			{
+				return $example;
+			}
+			else
+			{
+				$exampleArr = explode(':', $example);
+				$value = (isset($exampleArr[1]) && $exampleArr[1])? trim($exampleArr[1]): trim($example);
+			}
 		}
 		else if($type == 'integer' || $name == 'id' || ($name && strpos($name, 'Id') !== false))
 		{
