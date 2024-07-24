@@ -10,9 +10,9 @@ class Postman
 
 	private $postmanData = [
 		'info' => [
-			//'_postman_id' => '',
-			'name' 			=> 'Postman - Collection',
-			'schema' 		=> 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'
+			'_postman_id' 	=> '{{$guid}}',
+			'name' 		=> 'Postman - Collection',
+			'schema' 	=> 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'
 		],
 		'item' => [
 			// API Request Items
@@ -40,6 +40,7 @@ class Postman
 		$postmanData = NULL;
 		if($swaggerData && sizeof($swaggerData)> 0)
 		{
+			$this->postmanData['info']['name'] = $swaggerData['info']['title'];
 			$paths = (isset($swaggerData['paths']) && sizeof($swaggerData['paths'])> 0)? $swaggerData['paths']: [];
 			$this->securitySchemes = (isset($swaggerData['components']['securitySchemes']) && sizeof($swaggerData['components']['securitySchemes'])> 0)? $swaggerData['components']['securitySchemes']: [];
 			foreach($paths as $route => $endpoints)
@@ -55,6 +56,33 @@ class Postman
 			$postmanData = $this->postmanData;
 		}
 		return $postmanData;
+	}
+
+	public function generateEnv($baseURL)
+	{
+		$values = [
+			[
+				'key' 		=> 'baseURL',
+				'value' 	=> ($baseURL? $baseURL: ''),
+				'type' 		=> 'default',
+				'enabled' 	=> true
+			]
+		];
+		foreach($this->securitySchemes as $type => $securityScheme)
+		{
+			$values[] = [
+				'key' 		=> $type,
+				'value' 	=> '',
+				'type' 		=> 'default',
+				'enabled' 	=> true
+			];
+		}
+
+		return [
+			'id' => '{{$guid}}',
+			'name' => $this->postmanData['info']['name'].' - Environment',
+			'values' => $values
+		];
 	}
 
 	private function addItem($route, $method, $endpoint)
