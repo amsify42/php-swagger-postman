@@ -151,10 +151,10 @@ class Postman
 				if($securityHeader)
 				{
 					$headers[] 	= [
-						'key' 			=> $securityName,
-						'value' 		=> "{{".$securityName."}}",
+						'key' 		=> $securityHeader['name'],
+						'value' 	=> "{{".$securityName."}}",
 						'description' 	=> $securityHeader['description'],
-						'disabled' 		=> false
+						'disabled' 	=> false
 					];
 				}
 			}
