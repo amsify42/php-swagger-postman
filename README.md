@@ -42,7 +42,22 @@ $attribute->checkRules(
                 }
             );
 ```
-Note: By default `NULL` needs to be passed
+By default `NULL` needs to be return if array of tinyint/enum/property is not return and if you want to generate property for a param which might be having simple or nested array
+```php
+$attribute->checkRules(
+                function ($name, $rule) use($attribute) {
+                    if ($rule == 'array') {
+                        return [
+                            'property' => $attribute->createObjectOrArrayProperty(
+                                $_POST[$name], // or $_GET[$name] or value from body data
+                                $name
+                              )
+                        ];
+                    }
+                    return NULL;
+                }
+            );
+```
 
 #### For adding security
 ```php
@@ -106,7 +121,7 @@ composer require doctrine/annotations
 Refer to this link for more details
 https://github.com/zircote/swagger-php/blob/master/docs/guide/migrating-to-v4.md
 
-### Scanning the directory and generating swagger json for API documentation and postman collection json.
+### Scanning the directory and generating swagger json for API documentation and postman collection and postman environment json.
 ```php
 $swagger = new \Amsify42\PhpSwaggerPostman\Swagger;
 $swagger->getGeneratedJson(
@@ -137,4 +152,19 @@ $swagger->getGeneratedJson(
  * )
  */
 
+```
+If you want postman environment to have baseURL variable value, you can either set like this
+```php
+$swagger = new \Amsify42\PhpSwaggerPostman\Swagger;
+$swagger->setBaseURL('http://www.site.com')->getGeneratedJson(
+    "path/to/scan-directory",
+    "path/to/export-swagger-and-postman-json/"
+);
+```
+or define at least one server in swagger syntax
+```php
+#[OA\Server(
+    url: 'http://www.site.com',
+    description: 'some description about site'
+)]
 ```
