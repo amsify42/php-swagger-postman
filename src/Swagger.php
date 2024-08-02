@@ -14,13 +14,15 @@ class Swagger
 
     private $baseURL = NULL;
 
-    public function setBaseURL($baseURL)
+    private $env = NULL;
+
+    function __construct($baseURL=NULL, $env=NULL)
     {
-        $this->baseURL = $baseURL;
-        return $this;
+        $this->baseURL  = $baseURL;
+        $this->env      = $env;
     }
 
-	public function getGeneratedJson($scanPath, $saveTo, $fparams=[])
+    public function getGeneratedJson($scanPath, $saveTo, $fparams=[])
     {
         $filterTags = NULL;
         if(isset($fparams['filterTags']) && $fparams['filterTags'])
@@ -146,7 +148,8 @@ class Swagger
                     		file_put_contents($saveTo.DIRECTORY_SEPARATOR.$file.'.postman_collection.json', json_encode($postmanData));
 
                             $environmentData = $postman->generateEnv(
-                                ($this->baseURL? $this->baseURL: (isset($jsonData['servers'][0]['url'])? $jsonData['servers'][0]['url']: NULL))
+                                ($this->baseURL? $this->baseURL: (isset($jsonData['servers'][0]['url'])? $jsonData['servers'][0]['url']: NULL)),
+				$this->env
                             );
                             if(!empty($environmentData))
                             {
