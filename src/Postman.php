@@ -58,7 +58,7 @@ class Postman
 		return $postmanData;
 	}
 
-	public function generateEnv($baseURL)
+	public function generateEnv($baseURL, $env='Environment')
 	{
 		$values = [
 			[
@@ -80,7 +80,7 @@ class Postman
 
 		return [
 			'id' => '{{$guid}}',
-			'name' => $this->postmanData['info']['name'].' - Environment',
+			'name' => $this->postmanData['info']['name'].' - '.ucfirst($env),
 			'values' => $values
 		];
 	}
