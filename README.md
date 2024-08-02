@@ -155,8 +155,8 @@ $swagger->getGeneratedJson(
 ```
 If you want postman environment to have baseURL variable value, you can either set like this
 ```php
-$swagger = new \Amsify42\PhpSwaggerPostman\Swagger;
-$swagger->setBaseURL('http://www.site.com')->getGeneratedJson(
+$swagger = new \Amsify42\PhpSwaggerPostman\Swagger('http://www.site.com');
+$swagger->getGeneratedJson(
     "path/to/scan-directory",
     "path/to/export-swagger-and-postman-json/"
 );
@@ -167,4 +167,8 @@ or define at least one server in swagger syntax
     url: 'http://www.site.com',
     description: 'some description about site'
 )]
+```
+for adding environment suffix in postman environment file name, you can pass it in second parameter of Swagger Constructor
+```php
+$swagger = new \Amsify42\PhpSwaggerPostman\Swagger('http://www.site.com', 'Local');
 ```
