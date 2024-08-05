@@ -131,9 +131,11 @@ $swagger->getGeneratedJson(
 ```
 **Note:** Make sure to have `OA/Info` and at least one API endpoint already added before running `$swagger->getGeneratedJson()` method.
 ```php
+use OpenApi\Attributes as OA;
+
 #[OA\Info(title: "My API", version: "1.0.0")]
 
-#[OA\Get(path:"/api/users))
+#[OA\Get(path:"/api/users")]
 #[OA\Response(response:"200", description:"An example endpoint")]
 ```
 **Annotation Example**
