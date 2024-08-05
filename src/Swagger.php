@@ -105,6 +105,14 @@ class Swagger
                                         }
                                     }
                                 }
+				else
+                                {
+                                    $cAPI               = $api;
+                                    $cAPI['sort_order'] = 1;
+                                    $cAPI['route']      = $route;
+                                    $cAPI['method']     = $method;
+                                    $collections['swagger']['apis'][] = $cAPI;
+                                }
                             }   
                         }   
                     }     
