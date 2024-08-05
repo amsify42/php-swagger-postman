@@ -161,12 +161,21 @@ $swagger->getGeneratedJson(
     "path/to/export-swagger-and-postman-json/"
 );
 ```
-or define at least one server in swagger syntax
+or define at least one server in Attribute
 ```php
 #[OA\Server(
     url: 'http://www.site.com',
     description: 'some description about site'
 )]
+```
+or in Annotation
+```php
+/**
+ * @OA\Server(
+ *     url="http://www.site.com",
+ *     description="some description about site"
+ * )
+ */
 ```
 for adding environment suffix in postman environment file name, you can pass it in second parameter of Swagger Constructor
 ```php
