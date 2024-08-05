@@ -80,7 +80,7 @@ class Postman
 
 		return [
 			'id' => '{{$guid}}',
-			'name' => $this->postmanData['info']['name'].' - '.ucfirst($env),
+			'name' => $this->postmanData['info']['name'].' - '.$env,
 			'values' => $values
 		];
 	}
