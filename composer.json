@@ -1,7 +1,7 @@
 {
     "name": "amsify42/php-swagger-postman",
     "description": "PHP package for generating swagger json through its annotation and generate postman collection from it",
-    "type": "asda",
+    "type": "library",
     "require": {
         "zircote/swagger-php": "^4.7",
         "php": "^7.4"
