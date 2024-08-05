@@ -107,6 +107,11 @@ class Swagger
                                 }
 				else
                                 {
+				    if(!isset($collections['swagger']))
+                                    {
+                                        $collections['swagger']          = $jsonData;
+                                        $collections['swagger']['paths'] = [];
+                                    }
                                     $cAPI               = $api;
                                     $cAPI['sort_order'] = 1;
                                     $cAPI['route']      = $route;
