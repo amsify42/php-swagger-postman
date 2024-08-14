@@ -64,6 +64,8 @@ class Attribute
 	{
 		$property = "new OA\Property(\n{$indent}property: \"{$name}\",";
 
+		if(empty($data)) $data = [1];
+
 		$isArray = isset($data[0])? true: false;
 		$isArrOfObject = false;
 
@@ -76,7 +78,7 @@ class Attribute
 			$property .= "\n{$indent}type: \"object\",\n{$indent}__EXAMPLE__\n{$indent}properties: [";
 		}
 
-		foreach($data as $name => $value)
+		foreach($data as $dataKey => $value)
 		{
 			if($isArray)
 			{
@@ -86,16 +88,23 @@ class Attribute
 					$property .= "\n{$indent}\tproperties:[";
 					foreach($value as $propertyName => $propertyValue)
 					{
-						$propType = "";
-						if(Data::isInt($propertyValue))
+						if(is_array($propertyValue))
 						{
-							$propType = "\n{$indent}\t\t\ttype:\"integer\",\n{$indent}\t\t\tformat:\"int64\",";
+							$property .= "\n {$indent}\t\t".$this->createObjectOrArrayProperty($propertyValue, $propertyName, $indent."\t\t\t").",";
 						}
 						else
 						{
-							$propType = "\n{$indent}\t\t\ttype:\"string\",";
+							$propType = "";
+							if(Data::isInt($propertyValue))
+							{
+								$propType = "\n{$indent}\t\t\ttype:\"integer\",\n{$indent}\t\t\tformat:\"int64\",";
+							}
+							else
+							{
+								$propType = "\n{$indent}\t\t\ttype:\"string\",";
+							}
+							$property .= "\n{$indent}\t\tnew OA\Property(\n{$indent}\t\t\tproperty: \"{$propertyName}\",{$propType}\n{$indent}\t\t\texample: \"{$propertyValue}\"\n{$indent}\t\t),";
 						}
-						$property .= "\n{$indent}\t\tnew OA\Property(\n{$indent}\t\t\tproperty: \"{$propertyName}\",{$propType}\n{$indent}\t\t\texample: \"{$propertyValue}\"\n{$indent}\t\t),";
 					}
 					$property = rtrim($property, ',');
 					$property .= "\n{$indent}\t],";
@@ -126,7 +135,7 @@ class Attribute
 				{
 					$propType = "\n{$indent}\t\ttype:\"string\",";
 				}
-				$property .= "\n{$indent}\tnew OA\Property(\n{$indent}\t\tproperty: \"{$name}\",{$propType}\n{$indent}\t\texample: \"{$value}\"\n{$indent}\t),";
+				$property .= "\n{$indent}\tnew OA\Property(\n{$indent}\t\tproperty: \"{$dataKey}\",{$propType}\n{$indent}\t\texample: \"{$value}\"\n{$indent}\t),";
 			}
 		}
 		$property = str_replace("__EXAMPLE__\n{$indent}", '', $property);
@@ -352,7 +361,7 @@ class Attribute
 		if($isInt)
 		{
 			$type    = "integer";
-			$format  = ",\n \t\t\t\tformat:\"int64\"";
+			$format  = ",\n \t\t\t\t\tformat:\"int64\"";
 		}
 
 		if($isTinyInt)
