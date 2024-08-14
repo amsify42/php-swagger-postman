@@ -64,6 +64,8 @@ class Annotation
 	{	
 		$property = "@OA\Property(\n *{$indent}property=\"{$name}\",";
 
+		if(empty($data)) $data = [1];
+
 		$isArray = isset($data[0])? true: false;
 		$isArrOfObject = false;
 
@@ -75,7 +77,7 @@ class Annotation
 		{
 			$property .= "\n *{$indent}type=\"object\",\n *{$indent}__EXAMPLE__";
 		}
-		foreach($data as $name => $value)
+		foreach($data as $dataKey => $value)
 		{
 			if($isArray)
 			{
@@ -84,16 +86,23 @@ class Annotation
 					$isArrOfObject = true;
 					foreach($value as $propertyName => $propertyValue)
 					{
-						$propType = "";
-						if(Data::isInt($propertyValue))
+						if(is_array($propertyValue))
 						{
-							$propType = "\n *{$indent}\t\ttype=\"integer\",\n *{$indent}\t\tformat=\"int64\",";
+							$property .= "\n * {$indent}\t\t".$this->createObjectOrArrayProperty($propertyValue, $propertyName, $indent."\t\t\t").",";
 						}
 						else
 						{
-							$propType = "\n *{$indent}\t\ttype=\"string\",";
+							$propType = "";
+							if(Data::isInt($propertyValue))
+							{
+								$propType = "\n *{$indent}\t\ttype=\"integer\",\n *{$indent}\t\tformat=\"int64\",";
+							}
+							else
+							{
+								$propType = "\n *{$indent}\t\ttype=\"string\",";
+							}
+							$property .= "\n *{$indent}\t@OA\Property(\n *{$indent}\t\tproperty=\"{$propertyName}\",{$propType}\n *{$indent}\t\texample=\"{$propertyValue}\"\n *{$indent}\t),";
 						}
-						$property .= "\n *{$indent}\t@OA\Property(\n *{$indent}\t\tproperty=\"{$propertyName}\",{$propType}\n *{$indent}\t\texample=\"{$propertyValue}\"\n *{$indent}\t),";
 					}
 					$property = rtrim($property, ',');
 				}
@@ -123,7 +132,7 @@ class Annotation
 				{
 					$propType = "\n *{$indent}\ttype=\"string\",";
 				}
-				$property .= "\n *{$indent}@OA\Property(\n *{$indent}\tproperty=\"{$name}\",{$propType}\n *{$indent}\texample=\"{$value}\"\n *{$indent}),";
+				$property .= "\n *{$indent}@OA\Property(\n *{$indent}\tproperty=\"{$dataKey}\",{$propType}\n *{$indent}\texample=\"{$value}\"\n *{$indent}),";
 			}
 		}
 		$property = str_replace("\n *{$indent}__EXAMPLE__", '', $property);
@@ -226,7 +235,7 @@ class Annotation
 				}
 				if($propertyStr !== NULL)
 				{
-					$properties .= ($propertyStr? "\n \t\t\t\t".$propertyStr.",": "");
+					$bodyStr .= ($propertyStr? "\n \t\t\t\t".$propertyStr.",": "");
 					continue;	
 				}
 				$defVal   = $this->has($param)? $this->input($param): '';
