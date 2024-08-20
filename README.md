@@ -129,7 +129,9 @@ $swagger->getGeneratedJson(
     "path/to/export-swagger-and-postman-json/"
 );
 ```
-**Note:** Make sure to have `OA/Info` and at least one API endpoint already added before running `$swagger->getGeneratedJson()` method.
+**Notes:**
+1. Make sure to have `OA/Info` and at least one API endpoint already added before running `$swagger->getGeneratedJson()` method.
+2. For detecting source classes properly while scanning the directory, Either set `autoload` in `composer.json` or use `spl_autoload_register()` method for customize autoloading of the classes.
 ```php
 use OpenApi\Attributes as OA;
 
