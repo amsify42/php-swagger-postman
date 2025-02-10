@@ -2,6 +2,8 @@
 
 namespace Amsify42\PhpSwaggerPostman\Swagger;
 
+use stdClass;
+
 class Annotation
 {
 	private $method   = 'get';
@@ -123,16 +125,24 @@ class Annotation
 			}
 			else
 			{
-				$propType = "";
-				if(Data::isInt($value))
+				if(is_array($value) || $value instanceof stdClass)
 				{
-					$propType = "\n *{$indent}\ttype=\"integer\",\n *{$indent}\tformat=\"int64\",";
+					$propValue = (array) $value;
+					$property .= "\n * {$indent}".$this->createObjectOrArrayProperty($propValue, $dataKey, $indent."\t").",";
 				}
 				else
 				{
-					$propType = "\n *{$indent}\ttype=\"string\",";
+					$propType = "";
+					if(Data::isInt($value))
+					{
+						$propType = "\n *{$indent}\ttype=\"integer\",\n *{$indent}\tformat=\"int64\",";
+					}
+					else
+					{
+						$propType = "\n *{$indent}\ttype=\"string\",";
+					}
+					$property .= "\n *{$indent}@OA\Property(\n *{$indent}\tproperty=\"{$dataKey}\",{$propType}\n *{$indent}\texample=\"{$value}\"\n *{$indent}),";
 				}
-				$property .= "\n *{$indent}@OA\Property(\n *{$indent}\tproperty=\"{$dataKey}\",{$propType}\n *{$indent}\texample=\"{$value}\"\n *{$indent}),";
 			}
 		}
 		$property = str_replace("\n *{$indent}__EXAMPLE__", '', $property);
