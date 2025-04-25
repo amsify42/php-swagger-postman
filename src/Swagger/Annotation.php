@@ -53,7 +53,7 @@ class Annotation
 		$successDataContent = "";
 		if($data)
 		{
-			$successDataContent .= " *\t\t@OA\JsonContent(\n *\t\t\t";
+			$successDataContent .= " *\t\t@OA\JsonContent(\n *";
 			$successDataContent .= $this->createObjectOrArrayProperty($data);
 			$successDataContent .= "\n *\t\t)";
 		}
@@ -62,25 +62,34 @@ class Annotation
 		}
 	}
 
-	public function createObjectOrArrayProperty($data, $name='data', $indent="\t\t\t\t")
+	public function createObjectOrArrayProperty($data, $name=NULL, $indent="\t\t\t")
 	{	
-		$property = "@OA\Property(\n *{$indent}property=\"{$name}\",";
+		$property = ($name)? "@OA\Property(\n *{$indent}property=\"{$name}\",\n *": "";
 
 		if(empty($data)) $data = [1];
+
+		if($data instanceof stdClass)
+		{
+			$data = (array) $data;
+		}
 
 		$isArray = isset($data[0])? true: false;
 		$isArrOfObject = false;
 
 		if($isArray)
 		{
-			$property .= "\n *{$indent}type=\"array\",\n *{$indent}__EXAMPLE__\n *{$indent}@OA\Items(";
+			$property .= "{$indent}type=\"array\",\n *{$indent}__EXAMPLE__\n *{$indent}@OA\Items(";
 		}
 		else
 		{
-			$property .= "\n *{$indent}type=\"object\",\n *{$indent}__EXAMPLE__";
+			$property .= "{$indent}type=\"object\",\n *{$indent}__EXAMPLE__";
 		}
 		foreach($data as $dataKey => $value)
 		{
+			if($value instanceof stdClass)
+			{
+				$value = (array) $value;
+			}
 			if($isArray)
 			{
 				if(is_array($value))
@@ -110,25 +119,31 @@ class Annotation
 				}
 				else
 				{
-					if(Data::isInt($value))
+					if(is_array($value))
 					{
-						$property = str_replace('__EXAMPLE__', "example={\"".implode('","', $data)."\"},", $property);
-						$property .= "\n *{$indent}\ttype=\"integer\",\n *{$indent}\tformat=\"int64\"";
+						$property .= "\n * {$indent}".$this->createObjectOrArrayProperty($value, $property, $indent."\t").",";
 					}
 					else
 					{
-						$property = str_replace('__EXAMPLE__', "example={\"".implode('","', $data)."\"},", $property);
-						$property .= "\n *{$indent}\ttype=\"string\"";
+						if(Data::isInt($value))
+						{
+							$property = str_replace('__EXAMPLE__', "example={\"".implode('","', $data)."\"},", $property);
+							$property .= "\n *{$indent}\ttype=\"integer\",\n *{$indent}\tformat=\"int64\"";
+						}
+						else
+						{
+							$property = str_replace('__EXAMPLE__', "example={\"".implode('","', $data)."\"},", $property);
+							$property .= "\n *{$indent}\ttype=\"string\"";
+						}
 					}
 				}
 				break;
 			}
 			else
 			{
-				if(is_array($value) || $value instanceof stdClass)
+				if(is_array($value))
 				{
-					$propValue = (array) $value;
-					$property .= "\n * {$indent}".$this->createObjectOrArrayProperty($propValue, $dataKey, $indent."\t").",";
+					$property .= "\n * {$indent}".$this->createObjectOrArrayProperty($value, $dataKey, $indent."\t").",";
 				}
 				else
 				{
@@ -148,7 +163,7 @@ class Annotation
 		$property = str_replace("\n *{$indent}__EXAMPLE__", '', $property);
 		$property = rtrim($property, ',');
 		//return $property.($isArray && $isArrOfObject === false? "\n *{$indent})": "\n *".substr($indent, 0, strlen($indent)-1).")");
-		return $property.($isArray? "\n *{$indent})": "")."\n *".substr($indent, 0, strlen($indent)-1).")";
+		return $property.($isArray? "\n *{$indent})": "").($name? "\n *".substr($indent, 0, strlen($indent)-1).")": "");
 	}
 
 	public function generate($rules=[], $routeParams=[], $rulesCallback=NULL)
