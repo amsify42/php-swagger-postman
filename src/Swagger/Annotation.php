@@ -2,8 +2,6 @@
 
 namespace Amsify42\PhpSwaggerPostman\Swagger;
 
-use stdClass;
-
 class Annotation
 {
 	private $method   = 'get';
@@ -50,6 +48,7 @@ class Annotation
 
 	public function setSuccessData($data=NULL)
 	{
+		$data = json_decode(json_encode($data), true);
 		$successDataContent = "";
 		if($data)
 		{
@@ -68,13 +67,7 @@ class Annotation
 
 		if(empty($data)) $data = [1];
 
-		if($data instanceof stdClass)
-		{
-			$data = (array) $data;
-		}
-
 		$isArray = isset($data[0])? true: false;
-		$isArrOfObject = false;
 
 		if($isArray)
 		{
@@ -86,10 +79,6 @@ class Annotation
 		}
 		foreach($data as $dataKey => $value)
 		{
-			if($value instanceof stdClass)
-			{
-				$value = (array) $value;
-			}
 			if($isArray)
 			{
 				if(is_array($value))
@@ -99,7 +88,7 @@ class Annotation
 					{
 						if(is_array($propertyValue))
 						{
-							$property .= "\n * {$indent}\t\t".$this->createObjectOrArrayProperty($propertyValue, $propertyName, $indent."\t\t\t").",";
+							$property .= "\n * {$indent}\t".$this->createObjectOrArrayProperty($propertyValue, $propertyName, $indent."\t\t").",";
 						}
 						else
 						{
@@ -162,7 +151,6 @@ class Annotation
 		}
 		$property = str_replace("\n *{$indent}__EXAMPLE__", '', $property);
 		$property = rtrim($property, ',');
-		//return $property.($isArray && $isArrOfObject === false? "\n *{$indent})": "\n *".substr($indent, 0, strlen($indent)-1).")");
 		return $property.($isArray? "\n *{$indent})": "").($name? "\n *".substr($indent, 0, strlen($indent)-1).")": "");
 	}
 
