@@ -27,7 +27,7 @@ $attribute->checkRules(
                 function ($name, $rule) {
                     if ($rule == 'some_custom_rule') {
                         return [
-                            'property' => // Pass some custom property attribute syntax
+                            'property' => ''// Pass some custom property attribute syntax or empty string for skipping
                         ];
                     } else if ($rule == 'enum') {
                         return  [
