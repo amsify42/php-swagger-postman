@@ -2,8 +2,6 @@
 
 namespace Amsify42\PhpSwaggerPostman\Swagger;
 
-use stdClass;
-
 class Attribute
 {
 	private $method   = 'get';
@@ -50,6 +48,7 @@ class Attribute
 
 	public function setSuccessData($data=NULL)
 	{
+		$data = json_decode(json_encode($data), true);
 		$successDataContent = "";
 		if($data)
 		{
@@ -68,11 +67,6 @@ class Attribute
 
 		if(empty($data)) $data = [1];
 
-		if($data instanceof stdClass)
-		{
-			$data = (array) $data;
-		}
-
 		$isArray = (isset($data[0]))? true: false;
 		$isArrOfObject = false;
 
@@ -87,10 +81,6 @@ class Attribute
 
 		foreach($data as $dataKey => $value)
 		{
-			if($value instanceof stdClass)
-			{
-				$value = (array) $value;
-			}
 			if($isArray)
 			{
 				if(is_array($value))
@@ -110,11 +100,15 @@ class Attribute
 							{
 								$propType = "\n{$indent}\t\t\ttype:\"integer\",\n{$indent}\t\t\tformat:\"int64\",";
 							}
+							else if(is_bool($propertyValue))
+							{
+								$propType = "\n{$indent}\t\t\ttype:\"boolean\",";
+							}
 							else
 							{
 								$propType = "\n{$indent}\t\t\ttype:\"string\",";
 							}
-							$property .= "\n{$indent}\t\tnew OA\Property(\n{$indent}\t\t\tproperty: \"{$propertyName}\",{$propType}\n{$indent}\t\t\texample: \"{$propertyValue}\"\n{$indent}\t\t),";
+							$property .= "\n{$indent}\t\tnew OA\Property(\n{$indent}\t\t\tproperty: \"{$propertyName}\",{$propType}\n{$indent}\t\t\texample:".(is_bool($propertyValue)? ($propertyValue === true? ' true': ' false'): "\"".$propertyValue."\"")."\n{$indent}\t\t),";
 						}
 					}
 					$property = rtrim($property, ',');
@@ -155,11 +149,15 @@ class Attribute
 					{
 						$propType = "\n{$indent}\t\ttype:\"integer\",\n{$indent}\t\tformat:\"int64\",";
 					}
+					else if(is_bool($value))
+					{
+						$propType = "\n{$indent}\t\ttype:\"boolean\",";
+					}
 					else
 					{
 						$propType = "\n{$indent}\t\ttype:\"string\",";
 					}
-					$property .= "\n{$indent}\tnew OA\Property(\n{$indent}\t\tproperty: \"{$dataKey}\",{$propType}\n{$indent}\t\texample: \"{$value}\"\n{$indent}\t),";
+					$property .= "\n{$indent}\tnew OA\Property(\n{$indent}\t\tproperty: \"{$dataKey}\",{$propType}\n{$indent}\t\texample:".(is_bool($value)? ($value === true? ' true': ' false'): "\"".$value."\"")."\n{$indent}\t),";
 				}
 			}
 		}
