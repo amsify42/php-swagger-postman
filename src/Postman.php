@@ -203,16 +203,15 @@ class Postman
 			}
 
 			$params = [];
-			$notReq = [];
+			$jsonParams = [];
 			if(sizeof($properties) > 0)
 			{
 				foreach($properties as $field => $property)
-				{
-					$value = $this->getExampleValue($property, $field);
-					
+				{	
 					$isRequired = in_array($field, $required);	
 					if($mode == 'formdata')
 					{
+						$value = $this->getExampleValue($property, $field);
 						$description = isset($property['description'])? $property['description']: '';
 						if($isRequired)
 						{
@@ -228,14 +227,8 @@ class Postman
 					}
 					else
 					{
-						if($isRequired)
-						{
-							$params[$field] = $value;
-						}
-						else
-						{
-							$notReq[$field] = $field;
-						}
+						$jsonParams = $this->extractJsonDataFromSwagger($properties);
+						break;
 					}
 				}	
 			}
@@ -246,12 +239,7 @@ class Postman
 				];
 			if($mode == 'raw')
 			{
-				$prettyJson = json_encode(array_merge($params, $notReq), JSON_PRETTY_PRINT);
-				foreach($notReq as $field => $value)
-				{
-					$prettyJson = str_replace("\"{$field}\":", "//\"{$field}\":", $prettyJson);
-				}
-				$item['request']['body']['raw'] = $prettyJson;
+				$item['request']['body']['raw'] = json_encode($jsonParams, JSON_PRETTY_PRINT);
 				$item['request']['body']['options'] = [
 					'raw' => ['language' => 'json']
 				];
@@ -264,6 +252,27 @@ class Postman
 		}
 
 		$this->postmanData['item'][] = $item;
+	}
+
+	private function extractJsonDataFromSwagger($properties)
+	{
+		$actualProperties = [];
+		foreach($properties as $key => $property)
+		{
+			if($property['type'] == 'object')
+			{
+				$actualProperties[$key] = $this->extractJsonDataFromSwagger($property['properties']);
+			}
+			else
+			{
+				$actualProperties[$key] = $property['example']?? match ($property['type']) {
+											'integer' => 42,
+											'string' => 'lorem ipsum',
+											default => [],
+										};
+			}
+		}
+		return $actualProperties;
 	}
 
 	private function checkHeaderSecurity($name)
