@@ -113,17 +113,7 @@ class Postman
 				}
 				else if($urlParameter['in'] == 'query')
 				{
-					$description = isset($urlParameter['description'])? $urlParameter['description']: '';
-					if($urlParameter['required'])
-					{
-						$description = '(Required) '.$description;
-					}
-					$queryParams[] 	= [
-						'key' 			=> $urlParameter['name'],
-						'value' 		=> $this->getExampleValue($urlParameter, $urlParameter['name']),
-						'description' 	=> trim($description),
-						'disabled' 		=> !$urlParameter['required']
-					];
+					$this->addQueryParam($urlParameter, $queryParams);
 				}
 				else if($urlParameter['in'] == 'header')
 				{
@@ -252,6 +242,37 @@ class Postman
 		}
 
 		$this->postmanData['item'][] = $item;
+	}
+
+	private function addQueryParam($property, &$queryParams)
+	{
+		$description = isset($property['description'])? $property['description']: '';
+		if($property['required'])
+		{
+			$description = '(Required) '.$description;
+		}
+		if(isset($property['schema']['properties']) && sizeof($property['schema']['properties']) > 0)
+		{
+			foreach($property['schema']['properties'] as $sName => $sProperty)
+			{
+				$isArray = (isset($sProperty['type']) && $sProperty['type'] == 'array');
+
+				$childProperty = [
+					'description' => $description,
+					'name' => $property['name']."[".$sName."]".($isArray? "[]": ""),
+					'required' => $property['required'],
+					'example' => isset($sProperty['example'])? (($isArray && is_array($sProperty['example']) && isset($sProperty['example'][0]))? $sProperty['example'][0]: $sProperty['example']): ''
+				];
+				$this->addQueryParam($childProperty, $queryParams);
+			}
+		} else {
+			$queryParams[] 	= [
+				'key' 			=> $property['name'],
+				'value' 		=> $this->getExampleValue($property, $property['name']),
+				'description' 	=> trim($description),
+				'disabled' 		=> !$property['required']
+			];
+		}
 	}
 
 	private function extractJsonDataFromSwagger($properties)
