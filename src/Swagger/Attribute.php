@@ -358,9 +358,16 @@ class Attribute
 		$schema = "\n \tschema: new OA\Schema(";
 		if(is_array($value))
 		{
-			$isInt = isset($value[0]) && Data::isInt($value[0])? true: false;		
-			$type = ($isInt)? "\n\t\t\ttype:\"integer\",\n\t\t\tformat:\"int32\"": "\n\t\t\ttype:\"string\"";
-			$schema .= "\n\t\ttype: \"array\",\n\t\texample:[".($isInt? implode(",", $value): "\"".implode("\",\"", $value)."\"")."],\n\t\titems: new OA\Items({$type}\n\t\t)\n\t)";
+			// Check if it's an associative array (object-like) or indexed array
+        	$isAssoc = array_keys($value) !== range(0, count($value) - 1);
+
+			if($isAssoc) {
+				$schema .= "\n".$this->createObjectOrArrayProperty($value, NULL, "\t\t")."\n\t)";
+			} else {
+				$isInt = isset($value[0]) && Data::isInt($value[0])? true: false;		
+				$type = ($isInt)? "\n\t\t\ttype:\"integer\",\n\t\t\tformat:\"int32\"": "\n\t\t\ttype:\"string\"";
+				$schema .= "\n\t\ttype: \"array\",\n\t\texample:[".($isInt? implode(",", $value): "\"".implode("\",\"", $value)."\"")."],\n\t\titems: new OA\Items({$type}\n\t\t)\n\t)";
+			}
 		}
 		else
 		{
