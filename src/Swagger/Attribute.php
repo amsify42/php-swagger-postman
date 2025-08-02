@@ -52,9 +52,15 @@ class Attribute
 		$successDataContent = "";
 		if($data)
 		{
-			$successDataContent .= "new OA\JsonContent(\n";
-			$successDataContent .= $this->createObjectOrArrayProperty($data);
-			$successDataContent .= "\n\t)";
+		    if(array_key_exists('jsonapi', $data)){
+                	$successDataContent .= "new OA\MediaType(\n\t\tmediaType: \"application/vnd.api+json\",\n\t\tschema: new OA\Schema(\n";
+			$successDataContent .= $this->createObjectOrArrayProperty($data, NULL, "\t\t\t");
+			$successDataContent .= "\n\t\t)\n\t)";
+	            } else {
+	                $successDataContent .= "new OA\JsonContent(\n";
+	                $successDataContent .= $this->createObjectOrArrayProperty($data);
+	                $successDataContent .= "\n\t)";
+	            }
 		}
 		if($successDataContent) {
 			$this->responses[0]['content'] = $successDataContent;	
@@ -226,7 +232,7 @@ class Attribute
 
 		if($lMethod != 'get' && sizeof($rules)> 0)
 		{
-			$mediaType = ($lMethod == 'post' && !empty($_POST))? 'multipart/form-data': 'application/json';
+			$mediaType = ($lMethod == 'post' && !empty($_POST))? 'multipart/form-data': ((isset($_SERVER["CONTENT_TYPE"]) && $_SERVER['CONTENT_TYPE'])? $_SERVER['CONTENT_TYPE']: 'application/json');
 
 			$bodyStr .= "\n#[OA\RequestBody(\n\tcontent: new OA\MediaType(\n \t\tmediaType:\"".$mediaType."\",\n \t\tschema: new OA\Schema(\n";
 
