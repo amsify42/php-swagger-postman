@@ -97,6 +97,7 @@ class Postman
 		$addIsTest 		= ($method == 'get')? true: false;
 		$urlParameters 	= (isset($endpoint['parameters']) && sizeof($endpoint['parameters'])> 0)? $endpoint['parameters']: [];
 		$securities 	= (isset($endpoint['security']) && sizeof($endpoint['security'])> 0)? $endpoint['security']: [];
+		$jsonType 		= 'application/json';
 		if(sizeof($urlParameters)> 0)
 		{
 			foreach($urlParameters as $upk => $urlParameter)
@@ -122,9 +123,16 @@ class Postman
 					{
 						$description = '(Required) '.$description;
 					}
+
+					$headerValue = $this->getExampleValue($urlParameter, $urlParameter['name']);
+					if(strtolower($urlParameter['name']) == 'content-type')
+					{
+						$jsonType = $headerValue;
+					}
+					
 					$headers[] 	= [
 						'key' 			=> $urlParameter['name'],
-						'value' 		=> $this->getExampleValue($urlParameter, $urlParameter['name']),
+						'value' 		=> $headerValue,
 						'description' 	=> trim($description),
 						'disabled' 		=> !$urlParameter['required']
 					];
@@ -188,8 +196,8 @@ class Postman
 			}
 			else
 			{
-				$properties = $endpoint['requestBody']['content']['application/json']['schema']['properties']?? [];
-				$required 	= $endpoint['requestBody']['content']['application/json']['schema']['required']?? [];
+				$properties = $endpoint['requestBody']['content'][$jsonType]['schema']['properties']?? [];
+				$required 	= $endpoint['requestBody']['content'][$jsonType]['schema']['required']?? [];
 			}
 
 			$params = [];
