@@ -264,22 +264,33 @@ class Postman
 			foreach($property['schema']['properties'] as $sName => $sProperty)
 			{
 				$isArray = (isset($sProperty['type']) && $sProperty['type'] == 'array');
-
 				$childProperty = [
 					'description' => $description,
 					'name' => $property['name']."[".$sName."]".($isArray? "[]": ""),
 					'required' => $property['required'],
-					'example' => isset($sProperty['example'])? (($isArray && is_array($sProperty['example']) && isset($sProperty['example'][0]))? $sProperty['example'][0]: $sProperty['example']): ''
+					'example' => isset($sProperty['example'])? (($isArray && is_array($sProperty['example']) && isset($sProperty['example'][0]))? $sProperty['example'][0]: $sProperty['example']): '',
+					'properties' => isset($sProperty['properties'])? $sProperty['properties']: []
 				];
 				$this->addQueryParam($childProperty, $queryParams);
 			}
 		} else {
-			$queryParams[] 	= [
-				'key' 			=> $property['name'],
-				'value' 		=> $this->getExampleValue($property, $property['name']),
-				'description' 	=> trim($description),
-				'disabled' 		=> !$property['required']
-			];
+			if(isset($property['properties']) && sizeof($property['properties']) > 0) {
+				foreach($property['properties'] as $childPropertyName => $childProperty) {
+					$queryParams[] 	= [
+						'key' 			=> $property['name']."[".$childPropertyName."]",
+						'value' 		=> $this->getExampleValue($childProperty, $childPropertyName),
+						'description' 	=> trim($description),
+						'disabled' 		=> !$property['required']
+					];
+				}
+			} else {
+				$queryParams[] 	= [
+					'key' 			=> $property['name'],
+					'value' 		=> $this->getExampleValue($property, $property['name']),
+					'description' 	=> trim($description),
+					'disabled' 		=> !$property['required']
+				];
+			}
 		}
 	}
 
